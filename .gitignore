@@ -1,0 +1,51 @@
+# ==========================================
+# Xcode & SwiftUI Production .gitignore
+# ==========================================
+
+# Build Artifacts
+build/
+DerivedData/
+
+# User-specific settings (Window layout, open files, breakpoints)
+userdata/
+xcuserdata/
+**/xcuserdata/
+*.xcuserstate
+
+# Project Adjustments & Package Manager Artifacts
+.parts/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+
+# Swift Package Manager (SPM)
+.build/
+# Uncomment the line below if you want to explicitly avoid caching local SPM dependencies
+# Packages/
+
+# CocoaPods (If applicable)
+# It is recommended to commit Pods/ for reproducible builds, but uncomment if preferred
+# Pods/
+
+# Fastlane & Testing
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Environment & Security Keys
+.env
+.env.*
+*.xcconfig
+
+# macOS Operating System Files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.Trashes
+
