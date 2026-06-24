@@ -44,3 +44,15 @@ Packages resolve automatically on first build; no manual setup needed.
 5. Press **Run** (⌘R).
 
 > Note: The API base URL in `BaseTargetType` points to a placeholder host. In the simulator with internet, live API calls will fail and surface the error states; the offline (SwiftData) path and the stubbed `NetworkStubServiceImplementation` exercise the success paths.
+
+## Assumptions
+
+- **No real backend.** There is no live API, so `BaseTargetType` uses a placeholder base URL and endpoints rely on Moya's `sampleData`. The contract (paths, methods, JSON shape) is assumed rather than confirmed against a server.
+- **Connectivity decides the data source.** "Online" means `NWPathMonitor` reports a satisfied path; the app then prefers the API and treats SwiftData purely as a cache. A reachable path is assumed to mean the API is reachable.
+- **Offline changes are not synced back.** Creates/updates/deletes made while offline are written to SwiftData only. There is no pending-changes queue or conflict resolution to replay them to the server once connectivity returns.
+- **`id` is the source of truth for identity.** Caching and updates upsert by the project's `UUID`; the server is assumed to preserve the id sent by the client.
+- **Delete returns the resource.** The network layer decodes a `ClientProject` from the delete response; an API returning `204 No Content` would need a no-body request variant.
+- **Single user, single device.** No authentication, authorization, or multi-device sync is implemented.
+- **Validation is client-side only.** Required fields and the start/due date rule are enforced in the view models; the server is assumed to apply its own validation.
+- **Wiring is intentionally mixed for demonstration.** `HomeView` uses the stubbed network service (so the list populates) while create/detail use the live service (so error handling is visible). This is a demo choice, not a production setup.
+- **Latest-only toolchain.** The project targets the newest Xcode/iOS (26.5) and uses Swift's MainActor-by-default concurrency; older OS versions are not supported.
