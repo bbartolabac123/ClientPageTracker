@@ -1,5 +1,5 @@
 //
-//  CreateProjectView.swift
+//  ProjectDetailView.swift
 //  ClientProjectTracker
 //
 //  Created by Benjamin Bartolabac on 6/24/26.
@@ -8,49 +8,69 @@
 import SwiftUI
 import SwiftData
 
-struct CreateProjectView: View {
+struct ProjectDetailView: View {
 
-    @State private var viewModel: CreateProjectViewModel
+    @State private var viewModel: ProjectDetailViewModel
+    @State private var isConfirmingDelete = false
     @Environment(\.dismiss) private var dismiss
 
-    init(modelContext: ModelContext) {
+    private let title: String
+
+    init(project: ClientProject, modelContext: ModelContext) {
+        self.title = project.projectName
         let repository = ClientProjectImplementation(
             context: modelContext,
             networkService: NetworkStubServiceImplementation()
         )
-        
         _viewModel = State(
-            wrappedValue: CreateProjectViewModel(
-               clientProjectUseCase: ClientProjectsUseCase(clientProjectRepository: repository)
+            wrappedValue: ProjectDetailViewModel(
+                project: project,
+                clientProjectUseCase: ClientProjectsUseCase(
+                    clientProjectRepository: repository
+                )
             )
         )
     }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                detailsSection
-                classificationSection
-                scheduleSection
-                submitSection
-            }
-            .navigationTitle("New Project")
-            .navigationBarTitleDisplayMode(.inline)
-            .scrollDismissesKeyboard(.interactively)
-            .disabled(viewModel.isSubmitting)
-            .overlay { loadingOverlay }
-            .alert(
-                "Couldn't Save Project",
-                isPresented: errorAlertBinding,
-                actions: { Button("OK", role: .cancel) {} },
-                message: { Text(viewModel.errorMessage ?? "") }
-            )
-            .alert(
-                "Project Created",
-                isPresented: successAlertBinding,
-                actions: { Button("Done") { dismiss() } },
-                message: { Text("Your project has been saved successfully.") }
-            )
+        Form {
+            detailsSection
+            classificationSection
+            scheduleSection
+            updateSection
+            deleteSection
+                .confirmationDialog(
+                    "Delete Project?",
+                    isPresented: $isConfirmingDelete,
+                    titleVisibility: .visible
+                ) {
+                    Button("Delete", role: .destructive) {
+                        Task { await viewModel.delete() }
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("This will permanently delete \"\(title)\".")
+                }
+        }
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+        .scrollDismissesKeyboard(.interactively)
+        .disabled(viewModel.isBusy)
+        .overlay { loadingOverlay }
+        .alert(
+            "Something Went Wrong",
+            isPresented: errorAlertBinding,
+            actions: { Button("OK", role: .cancel) {} },
+            message: { Text(viewModel.errorMessage ?? "") }
+        )
+        .alert(
+            "Project Updated",
+            isPresented: updatedAlertBinding,
+            actions: { Button("OK") {} },
+            message: { Text("Your changes have been saved.") }
+        )
+        .onChange(of: viewModel.didDelete) { _, deleted in
+            if deleted { dismiss() }
         }
     }
 
@@ -117,19 +137,31 @@ struct CreateProjectView: View {
         }
     }
 
-    private var submitSection: some View {
+    private var updateSection: some View {
         Section {
             Button {
-                Task { await viewModel.submit() }
+                Task { await viewModel.update() }
             } label: {
-                Text("Create Project")
+                Text("Save Changes")
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
             }
             .buttonStyle(PrimaryButtonStyle())
-            .disabled(viewModel.isSubmitting || !viewModel.fieldErrors.isEmpty)
+            .disabled(!viewModel.isValid || viewModel.isBusy)
             .listRowInsets(EdgeInsets())
             .listRowBackground(Color.clear)
+        }
+    }
+
+    private var deleteSection: some View {
+        Section {
+            Button(role: .destructive) {
+                isConfirmingDelete = true
+            } label: {
+                Text("Delete Project")
+                    .frame(maxWidth: .infinity)
+            }
+            .disabled(viewModel.isBusy)
         }
     }
 
@@ -137,7 +169,7 @@ struct CreateProjectView: View {
 
     @ViewBuilder
     private var loadingOverlay: some View {
-        if viewModel.isSubmitting {
+        if viewModel.isBusy {
             ZStack {
                 Color.black.opacity(0.1).ignoresSafeArea()
                 ProgressView()
@@ -149,7 +181,7 @@ struct CreateProjectView: View {
     }
 
     @ViewBuilder
-    private func validationText(for field: CreateProjectViewModel.Field) -> some View {
+    private func validationText(for field: ProjectDetailViewModel.Field) -> some View {
         if let message = viewModel.fieldErrors[field] {
             Text(message)
                 .font(.caption)
@@ -166,9 +198,9 @@ struct CreateProjectView: View {
         )
     }
 
-    private var successAlertBinding: Binding<Bool> {
+    private var updatedAlertBinding: Binding<Bool> {
         Binding(
-            get: { viewModel.didCreateProject },
+            get: { viewModel.didUpdate },
             set: { isPresented in
                 if !isPresented { viewModel.state = .editing }
             }
@@ -181,5 +213,18 @@ struct CreateProjectView: View {
         for: ClientProjectEntity.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
-    CreateProjectView(modelContext: container.mainContext)
+    return NavigationStack {
+        ProjectDetailView(
+            project: ClientProject(
+                clientName: "Acme Corp",
+                projectName: "Website Redesign",
+                description: "Full redesign of the marketing site.",
+                status: .inProgress,
+                priority: .high,
+                startdate: .now,
+                dueDate: .now
+            ),
+            modelContext: container.mainContext
+        )
+    }
 }

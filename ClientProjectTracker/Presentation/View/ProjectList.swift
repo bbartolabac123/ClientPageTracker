@@ -8,11 +8,20 @@
 import SwiftUI
 
 struct ProjectList: View {
+    var projects: [ClientProject]
+    var coordinator: Coordinator
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        List(projects) { project in
+            ProjectRow(project: project)
+                .onTapGesture {
+                    coordinator.push(.projectDetail(project))
+                }
+                .buttonStyle(.plain)
+        }
+        .listStyle(.insetGrouped)
     }
 }
 
 #Preview {
-    ProjectList()
+    ProjectList(projects: [], coordinator: Coordinator())
 }

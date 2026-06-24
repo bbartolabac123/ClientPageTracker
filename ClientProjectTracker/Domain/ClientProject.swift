@@ -23,7 +23,7 @@ enum Priority: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-struct ClientProject: Codable, Identifiable {
+struct ClientProject: Codable, Identifiable, Hashable {
     var id: UUID = UUID()
     let clientName: String
     let projectName: String

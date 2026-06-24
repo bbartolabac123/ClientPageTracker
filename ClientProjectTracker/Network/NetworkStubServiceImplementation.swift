@@ -1,5 +1,5 @@
 //
-//  NetworkServiceImplementation.swift
+//  NetworkStubServiceImplementation.swift
 //  ClientProjectTracker
 //
 //  Created by Benjamin Bartolabac on 6/24/26.
@@ -11,6 +11,7 @@ import Moya
 final class NetworkStubServiceImplementation:
     NetworkService {
 
+    /// Returns the target's `sampleData` immediately, decoding it like the live service (for tests/previews).
     func request<
         Target: TargetType,
         Response: Decodable
@@ -18,8 +19,7 @@ final class NetworkStubServiceImplementation:
         _ target: Target
     ) async throws -> Response {
 
-        let provider =
-            MoyaProvider<Target>()
+        let provider = MoyaProvider<Target>(stubClosure: MoyaProvider.immediatelyStub)
 
         do {
 

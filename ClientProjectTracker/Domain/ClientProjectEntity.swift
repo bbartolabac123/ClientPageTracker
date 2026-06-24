@@ -49,6 +49,7 @@ final class ClientProjectEntity: Codable {
         case dueDate
     }
 
+    /// Decodes the entity, mapping the JSON `description` key to `projectDescription`.
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
@@ -61,6 +62,7 @@ final class ClientProjectEntity: Codable {
         dueDate = try container.decode(Date.self, forKey: .dueDate)
     }
 
+    /// Encodes the entity, mapping `projectDescription` to the JSON `description` key.
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
@@ -76,6 +78,7 @@ final class ClientProjectEntity: Codable {
 
 extension ClientProjectEntity {
 
+    /// Creates a persistence entity from a domain model.
     convenience init(from project: ClientProject) {
         self.init(
             id: project.id,
@@ -89,6 +92,7 @@ extension ClientProjectEntity {
         )
     }
 
+    /// Overwrites the stored values with those from a domain model.
     func update(from project: ClientProject) {
         clientName = project.clientName
         projectName = project.projectName
@@ -99,6 +103,7 @@ extension ClientProjectEntity {
         dueDate = project.dueDate
     }
 
+    /// Converts the persistence entity into its domain model.
     func toDomain() -> ClientProject {
         ClientProject(
             id: id,

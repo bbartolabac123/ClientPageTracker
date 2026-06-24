@@ -21,17 +21,18 @@ final class HomeViewModel {
 
     private(set) var state: State = .loading
 
-    private let clientProjectRepository: ClientProjectRepository
+    private let clientProjectUseCase: ClientProjectsUseCase
 
-    init(clientProjectRepository: ClientProjectRepository) {
-        self.clientProjectRepository = clientProjectRepository
+    init(clientProjectUseCase: ClientProjectsUseCase) {
+        self.clientProjectUseCase = clientProjectUseCase
     }
 
+    /// Loads all projects and reflects the outcome in `state` (loading/empty/loaded/failed).
     func loadProjects() async {
         state = .loading
 
         do {
-            let projects = try await clientProjectRepository.fetchClientProjects()
+            let projects = try await clientProjectUseCase.fetchAllClientProject()
             state = projects.isEmpty ? .empty : .loaded(projects)
         } catch let error as NetworkError {
             state = .failed(error.errorDescription ?? NetworkError.unknown.errorDescription ?? "")

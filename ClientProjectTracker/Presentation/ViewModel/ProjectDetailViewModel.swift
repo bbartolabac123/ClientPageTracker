@@ -1,5 +1,5 @@
 //
-//  CreateProjectViewModel.swift
+//  ProjectDetailViewModel.swift
 //  ClientProjectTracker
 //
 //  Created by Benjamin Bartolabac on 6/24/26.
@@ -10,7 +10,7 @@ import Observation
 
 @MainActor
 @Observable
-final class CreateProjectViewModel {
+final class ProjectDetailViewModel {
 
     enum Field: Hashable {
         case clientName
@@ -21,45 +21,54 @@ final class CreateProjectViewModel {
 
     enum State: Equatable {
         case editing
-        case submitting
+        case updating
+        case deleting
+        case updated
+        case deleted
         case failed(String)
-        case succeeded
     }
 
     // MARK: - Form Fields
 
-    var clientName: String = ""
-    var projectName: String = ""
-    var projectDescription: String = ""
-    var status: Status = .planning
-    var priority: Priority = .medium
-    var startDate: Date = .now
-    var dueDate: Date = .now
+    var clientName: String
+    var projectName: String
+    var projectDescription: String
+    var status: Status
+    var priority: Priority
+    var startDate: Date
+    var dueDate: Date
 
     // MARK: - UI State
 
     var state: State = .editing
 
-    var isSubmitting: Bool {
-        state == .submitting
-    }
+    var isBusy: Bool { state == .updating || state == .deleting }
 
     var errorMessage: String? {
         if case let .failed(message) = state { return message }
         return nil
     }
 
-    var didCreateProject: Bool {
-        state == .succeeded
-    }
+    var didUpdate: Bool { state == .updated }
+    var didDelete: Bool { state == .deleted }
 
     // MARK: - Dependencies
 
+    private let projectID: UUID
     private let clientProjectUseCase: ClientProjectsUseCase
 
     init(
+        project: ClientProject,
         clientProjectUseCase: ClientProjectsUseCase
     ) {
+        self.projectID = project.id
+        self.clientName = project.clientName
+        self.projectName = project.projectName
+        self.projectDescription = project.description
+        self.status = project.status
+        self.priority = project.priority
+        self.startDate = project.startdate
+        self.dueDate = project.dueDate
         self.clientProjectUseCase = clientProjectUseCase
     }
 
@@ -91,15 +100,9 @@ final class CreateProjectViewModel {
         fieldErrors.isEmpty
     }
 
-    // MARK: - Actions
-
-    /// Validates and saves the new project, updating `state` with the result.
-    func submit() async {
-        guard isValid else { return }
-
-        state = .submitting
-
-        let project = ClientProject(
+    private var currentProject: ClientProject {
+        ClientProject(
+            id: projectID,
             clientName: clientName.trimmed,
             projectName: projectName.trimmed,
             description: projectDescription.trimmed,
@@ -108,10 +111,35 @@ final class CreateProjectViewModel {
             startdate: startDate,
             dueDate: dueDate
         )
+    }
+
+    // MARK: - Actions
+
+    /// Validates and saves the edited project, updating `state` with the result.
+    func update() async {
+        guard isValid, !isBusy else { return }
+
+        state = .updating
 
         do {
-            try await clientProjectUseCase.save(clientProject: project)
-            state = .succeeded
+            try await clientProjectUseCase.update(clientProject: currentProject)
+            state = .updated
+        } catch let error as NetworkError {
+            state = .failed(error.errorDescription ?? NetworkError.unknown.errorDescription ?? "")
+        } catch {
+            state = .failed(error.localizedDescription)
+        }
+    }
+
+    /// Deletes the project, updating `state` with the result.
+    func delete() async {
+        guard !isBusy else { return }
+
+        state = .deleting
+
+        do {
+            try await clientProjectUseCase.delete(clientProject: currentProject)
+            state = .deleted
         } catch let error as NetworkError {
             state = .failed(error.errorDescription ?? NetworkError.unknown.errorDescription ?? "")
         } catch {

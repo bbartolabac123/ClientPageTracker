@@ -12,7 +12,7 @@ import SwiftData
 struct ClientProjectTrackerApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            ClientProjectEntity.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,7 +25,7 @@ struct ClientProjectTrackerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            CoordinatorView(modelContext: sharedModelContainer.mainContext)
         }
         .modelContainer(sharedModelContainer)
     }

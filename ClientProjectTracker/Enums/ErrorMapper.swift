@@ -1,8 +1,17 @@
+//
+//  ErrorMapper.swift
+//  ClientProjectTracker
+//
+//  Created by Benjamin Bartolabac on 6/24/26.
+//
+
+
 import Foundation
 import Moya
 
 enum ErrorMapper {
 
+    /// Translates an underlying error (Moya, URL, decoding) or HTTP status into a domain `NetworkError`.
     static func map(
         response: Response? = nil,
         error: Error
@@ -48,9 +57,6 @@ enum ErrorMapper {
 
             case 401:
                 return .unauthorized
-
-            case 403:
-                return .forbidden
 
             case 404:
                 return .notFound
